@@ -14,6 +14,11 @@ MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
 LIGHT_GREEN='\033[1;32m'
 
+declare -A dotFiles
+declare -A configFiles
+declare -A projectLangFiles
+declare -A frameworkFiles
+
 info()    { echo -e "${MAGENTA}ℹ${RESET} $*"; }
 success() { echo -e "${GREEN}✔${RESET} $*"; }
 warn()    { echo -e "${YELLOW}⚠${RESET} $*"; }
@@ -62,11 +67,6 @@ json_from_frameworks() {
     echo "}"
 }
 
-declare -A dotFiles
-declare -A configFiles
-declare -A projectLangFiles
-declare -A frameworkFiles
-
 declare -A FRAMEWORK_DOCS=(
     [react]="https://react.dev/learn"
     [vue]="https://vuejs.org/guide/"
@@ -83,6 +83,70 @@ declare -A FRAMEWORK_DOCS=(
     [gatsby]="https://www.gatsbyjs.com/docs/"
     [tailwind]="https://tailwindcss.com/docs"
     [bootstrap]="https://getbootstrap.com/docs/5.0/getting-started/introduction/"
+    [jquery]="https://api.jquery.com/"
+    [tensorflow]="https://www.tensorflow.org/learn"
+    [pytorch]="https://pytorch.org/docs/stable/index.html"
+    [docker]="https://docs.docker.com/"
+    [kubernetes]="https://kubernetes.io/docs/home/"
+    [ansible]="https://docs.ansible.com/"
+    [terraform]="https://www.terraform.io/docs/index.html"
+    [aws]="https://docs.aws.amazon.com/"
+    [azure]="https://learn.microsoft.com/en-us/azure/"
+    [gcp]="https://cloud.google.com/docs"
+    [node]="https://nodejs.org/en/docs/"
+    [npm]="https://docs.npmjs.com/"
+    [yarn]="https://classic.yarnpkg.com/en/docs/"
+    [pip]="https://pip.pypa.io/en/stable/"
+    [poetry]="https://python-poetry.org/docs/"
+    [maven]="https://maven.apache.org/guides/index.html"
+    [gradle]="https://docs.gradle.org/current/userguide/userguide.html"
+    [cargo]="https://doc.rust-lang.org/cargo/"
+    [go_modules]="https://blog.golang.org/using-go-modules"
+    [composer]="https://getcomposer.org/doc/"
+    [bundler]="https://bundler.io/docs.html"
+    [flutter]="https://flutter.dev/docs"
+    [react_native]="https://reactnative.dev/docs/getting-started"
+    [ionic]="https://ionicframework.com/docs"
+    [cordova]="https://cordova.apache.org/docs/en/latest/"
+    [electron]="https://www.electronjs.org/docs/latest"
+    [unity]="https://docs.unity3d.com/Manual/index.html"
+    [unreal]="https://docs.unrealengine.com/en-US/index.html"
+    [godot]="https://docs.godotengine.org/en/stable/"
+    [wordpress]="https://developer.wordpress.org/"
+    [drupal]="https://www.drupal.org/docs"
+    [joomla]="https://docs.joomla.org/"
+    [shopify]="https://shopify.dev/docs"
+    [magento]="https://developer.adobe.com/commerce/docs/"
+    [salesforce]="https://developer.salesforce.com/docs"
+    [sap]="https://help.sap.com/viewer/index"
+    [oracle]="https://docs.oracle.com/en/"
+    [mysql]="https://dev.mysql.com/doc/"
+    [postgresql]="https://www.postgresql.org/docs/"
+    [mongodb]="https://docs.mongodb.com/"
+    [redis]="https://redis.io/documentation"
+    [elasticsearch]="https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html"
+    [rabbitmq]="https://www.rabbitmq.com/documentation.html"
+    [kafka]="https://kafka.apache.org/documentation/"
+    [prometheus]="https://prometheus.io/docs/introduction/overview/"
+    [grafana]="https://grafana.com/docs/grafana/latest/"
+    [jenkins]="https://www.jenkins.io/doc/"
+    [circleci]="https://circleci.com/docs/"
+    [travisci]="https://docs.travis-ci.com/"
+    [github_actions]="https://docs.github.com/en/actions"
+    [gitlab_ci]="https://docs.gitlab.com/ee/ci/"
+    [bitbucket_pipelines]="https://support.atlassian.com/bitbucket-cloud/docs/get-started-with-bitbucket-pipelines/"
+    [selenium]="https://www.selenium.dev/documentation/en/"
+    [cypress]="https://docs.cypress.io/guides/overview/why-cypress"
+    [jest]="https://jestjs.io/docs/getting-started"
+    [mocha]="https://mochajs.org/#getting-started"
+    [jasmine]="https://jasmine.github.io/pages/getting_started.html"
+    [pytest]="https://docs.pytest.org/en/stable/"
+    [unittest]="https://docs.python.org/3/library/unittest.html"
+    [rspec]="https://rspec.info/documentation/"
+    [capybara]="https://teamcapybara.github.io/capybara/"
+    [selenium]="https://www.selenium.dev/documentation/en/"
+    [cucumber]="https://cucumber.io/docs/guides/10-minute-tutorial/"
+    [robot_framework]="https://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html"
 )
 
 print_entry() {
@@ -284,16 +348,16 @@ while [[ $# -gt 0 ]]; do
                 shift
             done
             ;;
-        -save_scrolls)
+        --save_scrolls)
             SAVE_SCROLLS="$2"
             shift 2
             ;;
-        -l|--list)
+        --l|--list)
             ARRAY_REQUEST="$2"
             shift 2
             ;;
         -h|--help)
-            echo "Usage: ./hermes -get_scrolls DIR [DIR ...] [-save_scrolls FILE] [-l ARRAY]"
+            echo "Usage: ./hermes -get_scrolls DIR [DIR ...] [--save_scrolls FILE] [--l ARRAY]"
             exit 0
             ;;
         *)
@@ -311,11 +375,11 @@ case "$COMMAND" in
         done
         ;;
     save_scrolls)
-        error "-save_scrolls must be used with -get_scrolls"
+        error "--save_scrolls must be used with -get_scrolls"
         exit 1
         ;;
     list)
-        error "-l|--list must be used with -get_scrolls"
+        error "--l|--list must be used with -get_scrolls"
         exit 1
         ;;
     *)
