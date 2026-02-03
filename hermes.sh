@@ -86,17 +86,6 @@ declare -A FRAMEWORK_DOCS=(
     [jquery]="https://api.jquery.com/"
     [tensorflow]="https://www.tensorflow.org/learn"
     [pytorch]="https://pytorch.org/docs/stable/index.html"
-    [docker]="https://docs.docker.com/"
-    [kubernetes]="https://kubernetes.io/docs/home/"
-    [ansible]="https://docs.ansible.com/"
-    [terraform]="https://www.terraform.io/docs/index.html"
-    [aws]="https://docs.aws.amazon.com/"
-    [azure]="https://learn.microsoft.com/en-us/azure/"
-    [gcp]="https://cloud.google.com/docs"
-    [node]="https://nodejs.org/en/docs/"
-    [npm]="https://docs.npmjs.com/"
-    [yarn]="https://classic.yarnpkg.com/en/docs/"
-    [pip]="https://pip.pypa.io/en/stable/"
     [poetry]="https://python-poetry.org/docs/"
     [maven]="https://maven.apache.org/guides/index.html"
     [gradle]="https://docs.gradle.org/current/userguide/userguide.html"
@@ -117,11 +106,6 @@ declare -A FRAMEWORK_DOCS=(
     [joomla]="https://docs.joomla.org/"
     [shopify]="https://shopify.dev/docs"
     [magento]="https://developer.adobe.com/commerce/docs/"
-    [salesforce]="https://developer.salesforce.com/docs"
-    [sap]="https://help.sap.com/viewer/index"
-    [oracle]="https://docs.oracle.com/en/"
-    [mysql]="https://dev.mysql.com/doc/"
-    [postgresql]="https://www.postgresql.org/docs/"
     [mongodb]="https://docs.mongodb.com/"
     [redis]="https://redis.io/documentation"
     [elasticsearch]="https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html"
@@ -130,10 +114,6 @@ declare -A FRAMEWORK_DOCS=(
     [prometheus]="https://prometheus.io/docs/introduction/overview/"
     [grafana]="https://grafana.com/docs/grafana/latest/"
     [jenkins]="https://www.jenkins.io/doc/"
-    [circleci]="https://circleci.com/docs/"
-    [travisci]="https://docs.travis-ci.com/"
-    [github_actions]="https://docs.github.com/en/actions"
-    [gitlab_ci]="https://docs.gitlab.com/ee/ci/"
     [bitbucket_pipelines]="https://support.atlassian.com/bitbucket-cloud/docs/get-started-with-bitbucket-pipelines/"
     [selenium]="https://www.selenium.dev/documentation/en/"
     [cypress]="https://docs.cypress.io/guides/overview/why-cypress"
@@ -193,7 +173,7 @@ get_scrolls() {
             -o -iname "*.swift" -o -iname "*.kt" -o -iname "*.scala" -o -iname "*.hs" \
             -o -iname "*.r" -o -iname "*.dart" -o -iname "*.elm" -o -iname "*.clj" \
             -o -iname "*.groovy" -o -iname "*.coffee" -o -iname "*.vb" -o -iname "*.fs" \
-            -o -iname "*.scm" -o -iname "*.liquid" \
+            -o -iname "*.scm" -o -iname "*.liquid" -o -iname "*.m" \
         \)
     )
 
@@ -223,6 +203,8 @@ get_scrolls() {
 
     section "Config Files & Frameworks"
 
+    declare -A config_groups config_urls
+
     for path in "${project_configfiles[@]}"; do
         file="$(basename "$path")"
         normalized_file="$(normalize "$file")"
@@ -237,6 +219,10 @@ get_scrolls() {
             *)                 configFiles["$file"]="https://www.google.com/search?q=${file}_documentation" ;;
         esac
 
+        # Group by normalized filename
+        config_groups["$normalized_file"]+="$file "
+        config_urls["$normalized_file"]="${configFiles[$file]}"
+
         IFS=' ._-' read -r -a parts <<< "$normalized_file"
 
         for part in "${parts[@]}"; do
@@ -245,60 +231,91 @@ get_scrolls() {
                 frameworkFiles["$file"]+="${FRAMEWORK_DOCS[$part]} "
             fi
         done
-
-        print_entry "Config" "$file" "${configFiles[$file]}"
-
-        if [[ -n "${frameworkFiles[$file]:-}" ]]; then
-            echo -e "  ${MAGENTA}Frameworks:${RESET}"
-            printf "    %s\n" ${frameworkFiles[$file]}
-        fi
     done
+
+    # Display grouped config files
+    for config_type in "${!config_groups[@]}"; do
+        files="${config_groups[$config_type]}"
+        url="${config_urls[$config_type]}"
+        echo -e "  ${CYAN}${config_type}:${RESET} ${BOLD}${files}${RESET}"
+        echo -e "    ${GREEN}Docs:${RESET} $url"
+    done
+
+    # Display frameworks separately if found
+    if [[ ${#frameworkFiles[@]} -gt 0 ]]; then
+        echo -e "  ${MAGENTA}Frameworks:${RESET}"
+        for file in "${!frameworkFiles[@]}"; do
+            printf "    ${BOLD}%s${RESET}: %s\n" "$file" "${frameworkFiles[$file]}"
+        done
+    fi
 
     section "Language Files"
 
+    declare -A lang_groups lang_urls lang_names
+    
+    # First pass: group files by extension and collect metadata
     for path in "${project_langfiles[@]}"; do
         file="$(basename "$path")"
         normalized_file="$(normalize "$file")"
         ext="${normalized_file##*.}"
 
-        case "$ext" in
-            py)  projectLangFiles["$file"]="https://docs.python.org/3/" ;;
-            js)  projectLangFiles["$file"]="https://developer.mozilla.org/docs/Web/JavaScript" ;;
-            sh|bash) projectLangFiles["$file"]="https://www.gnu.org/software/bash/manual/bash.html" ;;
-            yml|yaml) projectLangFiles["$file"]="https://yaml.org/spec/" ;;
-            ts|tsx) projectLangFiles["$file"]="https://www.typescriptlang.org/docs/" ;;
-            jsx) projectLangFiles["$file"]="https://react.dev/learn" ;;
-            go)  projectLangFiles["$file"]="https://go.dev/doc/" ;;
-            rs)  projectLangFiles["$file"]="https://doc.rust-lang.org/book/" ;;
-            java) projectLangFiles["$file"]="https://docs.oracle.com/en/java/" ;;
-            c|cpp) projectLangFiles["$file"]="https://en.cppreference.com/w/" ;;
-            css) projectLangFiles["$file"]="https://developer.mozilla.org/docs/Web/CSS" ;;
-            html) projectLangFiles["$file"]="https://developer.mozilla.org/docs/Web/HTML" ;;
-            php) projectLangFiles["$file"]="https://www.php.net/docs.php" ;;
-            lua) projectLangFiles["$file"]="https://www.lua.org/docs.html" ;;
-            rb)  projectLangFiles["$file"]="https://www.ruby-lang.org/en/documentation/" ;;
-            md)  projectLangFiles["$file"]="https://www.markdownguide.org/basic-syntax/" ;;
-            liquid) projectLangFiles["$file"]="https://shopify.github.io/liquid/" ;;
-            json) projectLangFiles["$file"]="https://www.json.org/json-en.html" ;;
-            xml) projectLangFiles["$file"]="https://www.w3.org/XML/" ;;
-            pl|perl) projectLangFiles["$file"]="https://perldoc.perl.org/" ;;
-            swift) projectLangFiles["$file"]="https://swift.org/documentation/" ;;
-            kt)   projectLangFiles["$file"]="https://kotlinlang.org/docs/home.html" ;;
-            scala) projectLangFiles["$file"]="https://docs.scala-lang.org/" ;;
-            hs)   projectLangFiles["$file"]="https://www.haskell.org/documentation/" ;;
-            r)    projectLangFiles["$file"]="https://cran.r-project.org/manuals.html" ;;
-            dart) projectLangFiles["$file"]="https://dart.dev/guides" ;;
-            elm)  projectLangFiles["$file"]="https://guide.elm-lang.org/" ;;
-            clj)  projectLangFiles["$file"]="https://clojure.org/reference/documentation" ;;
-            groovy) projectLangFiles["$file"]="https://groovy-lang.org/documentation.html" ;;
-            coffee) projectLangFiles["$file"]="https://coffeescript.org/#documentation" ;;
-            vb)   projectLangFiles["$file"]="https://docs.microsoft.com/en-us/dotnet/visual-basic/" ;;
-            fs)   projectLangFiles["$file"]="https://docs.microsoft.com/en-us/dotnet/fsharp/" ;;
-            scm)  projectLangFiles["$file"]="https://mitpress.mit.edu/books/introduction-scheme" ;;
-            *)   projectLangFiles["$file"]="https://www.google.com/search?q=${file}_documentation" ;;
-        esac
+        lang_groups["$ext"]+="$file "
 
-        print_entry "Language" "$file" "${projectLangFiles[$file]}"
+        # Determine language name and URL for this extension
+        if [[ ! -v lang_urls["$ext"] ]]; then
+            case "$ext" in
+                py)    lang_names["$ext"]="Python"; lang_urls["$ext"]="https://docs.python.org/3/" ;;
+                js)    lang_names["$ext"]="JavaScript"; lang_urls["$ext"]="https://developer.mozilla.org/docs/Web/JavaScript" ;;
+                sh)    lang_names["$ext"]="Shell"; lang_urls["$ext"]="https://www.gnu.org/software/bash/manual/bash.html" ;;
+                bash)  lang_names["$ext"]="Bash"; lang_urls["$ext"]="https://www.gnu.org/software/bash/manual/bash.html" ;;
+                yml)   lang_names["$ext"]="YAML"; lang_urls["$ext"]="https://yaml.org/spec/" ;;
+                yaml)  lang_names["$ext"]="YAML"; lang_urls["$ext"]="https://yaml.org/spec/" ;;
+                ts)    lang_names["$ext"]="TypeScript"; lang_urls["$ext"]="https://www.typescriptlang.org/docs/" ;;
+                tsx)   lang_names["$ext"]="TypeScript/React"; lang_urls["$ext"]="https://www.typescriptlang.org/docs/" ;;
+                jsx)   lang_names["$ext"]="React/JSX"; lang_urls["$ext"]="https://react.dev/learn" ;;
+                go)    lang_names["$ext"]="Go"; lang_urls["$ext"]="https://go.dev/doc/" ;;
+                rs)    lang_names["$ext"]="Rust"; lang_urls["$ext"]="https://doc.rust-lang.org/book/" ;;
+                java)  lang_names["$ext"]="Java"; lang_urls["$ext"]="https://docs.oracle.com/en/java/" ;;
+                c)     lang_names["$ext"]="C"; lang_urls["$ext"]="https://en.cppreference.com/w/" ;;
+                cpp)   lang_names["$ext"]="C++"; lang_urls["$ext"]="https://en.cppreference.com/w/" ;;
+                css)   lang_names["$ext"]="CSS"; lang_urls["$ext"]="https://developer.mozilla.org/docs/Web/CSS" ;;
+                html)  lang_names["$ext"]="HTML"; lang_urls["$ext"]="https://developer.mozilla.org/docs/Web/HTML" ;;
+                php)   lang_names["$ext"]="PHP"; lang_urls["$ext"]="https://www.php.net/docs.php" ;;
+                lua)   lang_names["$ext"]="Lua"; lang_urls["$ext"]="https://www.lua.org/docs.html" ;;
+                rb)    lang_names["$ext"]="Ruby"; lang_urls["$ext"]="https://www.ruby-lang.org/en/documentation/" ;;
+                md)    lang_names["$ext"]="Markdown"; lang_urls["$ext"]="https://www.markdownguide.org/basic-syntax/" ;;
+                liquid) lang_names["$ext"]="Liquid"; lang_urls["$ext"]="https://shopify.github.io/liquid/" ;;
+                json)  lang_names["$ext"]="JSON"; lang_urls["$ext"]="https://www.json.org/json-en.html" ;;
+                xml)   lang_names["$ext"]="XML"; lang_urls["$ext"]="https://www.w3.org/XML/" ;;
+                pl)    lang_names["$ext"]="Perl"; lang_urls["$ext"]="https://perldoc.perl.org/" ;;
+                perl)  lang_names["$ext"]="Perl"; lang_urls["$ext"]="https://perldoc.perl.org/" ;;
+                swift) lang_names["$ext"]="Swift"; lang_urls["$ext"]="https://swift.org/documentation/" ;;
+                kt)    lang_names["$ext"]="Kotlin"; lang_urls["$ext"]="https://kotlinlang.org/docs/home.html" ;;
+                scala) lang_names["$ext"]="Scala"; lang_urls["$ext"]="https://docs.scala-lang.org/" ;;
+                hs)    lang_names["$ext"]="Haskell"; lang_urls["$ext"]="https://www.haskell.org/documentation/" ;;
+                r)     lang_names["$ext"]="R"; lang_urls["$ext"]="https://cran.r-project.org/manuals.html" ;;
+                dart)  lang_names["$ext"]="Dart"; lang_urls["$ext"]="https://dart.dev/guides" ;;
+                elm)   lang_names["$ext"]="Elm"; lang_urls["$ext"]="https://guide.elm-lang.org/" ;;
+                clj)   lang_names["$ext"]="Clojure"; lang_urls["$ext"]="https://clojure.org/reference/documentation" ;;
+                groovy) lang_names["$ext"]="Groovy"; lang_urls["$ext"]="https://groovy-lang.org/documentation.html" ;;
+                coffee) lang_names["$ext"]="CoffeeScript"; lang_urls["$ext"]="https://coffeescript.org/#documentation" ;;
+                vb)    lang_names["$ext"]="Visual Basic"; lang_urls["$ext"]="https://docs.microsoft.com/en-us/dotnet/visual-basic/" ;;
+                fs)    lang_names["$ext"]="F#"; lang_urls["$ext"]="https://docs.microsoft.com/en-us/dotnet/fsharp/" ;;
+                scm)   lang_names["$ext"]="Scheme"; lang_urls["$ext"]="https://mitpress.mit.edu/books/introduction-scheme" ;;
+                m)     lang_names["$ext"]="MATLAB"; lang_urls["$ext"]="https://www.mathworks.com/help/matlab/" ;;
+                *)     lang_names["$ext"]="Unknown"; lang_urls["$ext"]="https://www.google.com/search?q=${ext}_documentation" ;;
+            esac
+        fi
+    done
+
+    # Display grouped language files
+    for ext in "${!lang_groups[@]}"; do
+        lang_name="${lang_names[$ext]}"
+        url="${lang_urls[$ext]}"
+        files="${lang_groups[$ext]}"
+        
+        echo -e "  ${CYAN}${lang_name}:${RESET} ${BOLD}${files}${RESET}"
+        echo -e "    ${GREEN}Docs:${RESET} $url"
     done
 
     if [[ -n "$REQUESTED_ARRAY" ]]; then
